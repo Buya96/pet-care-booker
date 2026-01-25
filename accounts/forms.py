@@ -31,17 +31,17 @@ class SignUpForm(UserCreationForm):
             Submit('submit', 'Create Account', css_class='btn btn-primary w-100'),
         )
 
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data['email']
-        if commit:
-            user.save()
-            UserProfile.objects.create(
-                user=user,
-                phone=self.cleaned_data['phone'],
-                address=self.cleaned_data['address'],
-            )
-        return user
-
-
-    
+def save(self, commit=True):
+    user = super().save(commit=False)
+    user.email = self.cleaned_data['email']
+    if commit:
+        user.save()
+        # Check if profile exists first
+        profile, created = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'phone': self.cleaned_data['phone'],
+                'address': self.cleaned_data['address']
+            }
+        )
+    return user
