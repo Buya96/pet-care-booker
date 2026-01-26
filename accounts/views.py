@@ -39,4 +39,9 @@ class ProfileView(TemplateView):
         context['user'] = self.request.user
         return context
 
+def home(request):
+    return render(request, 'accounts/home.html')
+
+def services(request):
+    return render(request, 'accounts/services.html')
 

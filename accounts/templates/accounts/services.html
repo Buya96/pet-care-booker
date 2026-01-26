@@ -1,0 +1,90 @@
+{% extends 'accounts/base.html' %}
+{% load static %}
+
+{% block title %}Our Services - Pet Care Booker{% endblock %}
+{% block extra_css %}
+<style>
+.service-hero {
+  background: linear-gradient(rgba(0,123,255,.8), rgba(0,123,255,.8)), 
+              url('https://images.unsplash.com/photo-1571290766190-58e9646d677a?w=1200&auto=format') center/cover;
+  color: white;
+  padding: 100px 0;
+}
+.service-card {
+  transition: transform 0.3s, box-shadow 0.3s;
+  border: none;
+  overflow: hidden;
+}
+.service-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0,123,255,0.2);
+}
+.price-badge {
+  background: linear-gradient(45deg, #28a745, #20c997);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 50px;
+  font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="service-hero text-center">
+  <div class="container">
+    <h1 class="display-3 fw-bold mb-4">Our Pet Care Services</h1>
+    <p class="lead mb-4">Professional, insured, loving care for your pets</p>
+    <a href="{% url 'profile' %}" class="btn btn-light btn-lg px-5">Book Now</a>
+  </div>
+</section>
+
+<!-- Services Grid -->
+<div class="container my-5">
+  <div class="row g-4">
+    
+    <!-- Dog Walking -->
+    <div class="col-lg-4 col-md-6">
+      <div class="card service-card h-100">
+        <img src="https://images.unsplash.com/photo-1581578731547-79b7d5a4f632?w=400&h=250&fit=crop" 
+             class="card-img-top" alt="Dog Walking">
+        <div class="card-body d-flex flex-column">
+          <h3 class="card-title text-primary">Dog Walking</h3>
+          <p class="card-text flex-grow-1">30-60 minute walks in local parks. Group or solo walks available. Fully insured walkers.</p>
+          <div class="price-badge mb-3">£15/hour</div>
+          <a href="{% url 'profile' %}" class="btn btn-primary w-100">Book Walk</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Grooming -->
+    <div class="col-lg-4 col-md-6">
+      <div class="card service-card h-100">
+        <img src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&h=250&fit=crop" 
+             class="card-img-top" alt="Pet Grooming">
+        <div class="card-body d-flex flex-column">
+          <h3 class="card-title text-primary">Grooming</h3>
+          <p class="card-text flex-grow-1">Bath, trim, nail clipping, ear cleaning. All breeds welcome. Mobile service available.</p>
+          <div class="price-badge mb-3">£25/full groom</div>
+          <a href="{% url 'profile' %}" class="btn btn-primary w-100">Book Groom</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Boarding -->
+    <div class="col-lg-4 col-md-6">
+      <div class="card service-card h-100">
+        <img src="https://images.unsplash.com/photo-1581578731547-79b7d5a4f632?w=400&h=250&fit=crop" 
+             class="card-img-top" alt="Pet Boarding">
+        <div class="card-body d-flex flex-column">
+          <h3 class="card-title text-primary">Boarding</h3>
+          <p class="card-text flex-grow-1">Home boarding in loving family environment. Daily updates and photos sent to you.</p>
+          <div class="price-badge mb-3">£30/night</div>
+          <a href="{% url 'profile' %}" class="btn btn-primary w-100">Book Stay</a>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</div>
+{% endblock %}
