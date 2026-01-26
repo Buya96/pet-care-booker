@@ -1,0 +1,15 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <h2>Welcome, {{ user.username }}!</h2>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+    <p><strong>Phone:</strong> {{ user.userprofile.phone|default:"Not set" }}</p>
+    <p><strong>Address:</strong> {{ user.userprofile.address|default:"Not set" }}</p>
+  </div>
+</div>
+<a href="{% url 'logout' %}" class="btn btn-outline-danger">Logout</a>
+{% endblock %}

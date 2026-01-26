@@ -4,15 +4,17 @@
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
+from django.contrib.auth.views import LoginView, LogoutView
 from django.views.generic import CreateView
 from django.urls import reverse_lazy
 from .forms import SignUpForm
+from django.views.generic import TemplateView
 
 # Create your views here.
 
 class SignUpView(CreateView):
     form_class = SignUpForm
-    success_url = '/accounts/profile/'
+    success_url = '/accounts/login/'
     template_name = 'accounts/signup.html'
 
     def form_valid(self, form):
@@ -29,5 +31,12 @@ class CustomLoginView(LoginView):
 
 login = LoginView.as_view()
 
+class ProfileView(TemplateView):
+    template_name = 'accounts/profile.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context
 
 
