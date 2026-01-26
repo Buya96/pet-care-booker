@@ -9,6 +9,7 @@ from django.views.generic import CreateView
 from django.urls import reverse_lazy
 from .forms import SignUpForm
 from django.views.generic import TemplateView
+from .forms import BookingForm  
 
 # Create your views here.
 
@@ -44,4 +45,14 @@ def home(request):
 
 def services(request):
     return render(request, 'accounts/services.html')
+
+class BookingView(FormView):
+    template_name = 'accounts/booking.html'
+    form_class = BookingForm
+    success_url = '/profile/'
+
+    def form_valid(self, form):
+        # Save booking (simplified for MVP)
+        form.save()
+        return super().form_valid(form)
 

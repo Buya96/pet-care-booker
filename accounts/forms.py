@@ -45,3 +45,30 @@ def save(self, commit=True):
             }
         )
     return user
+
+
+class BookingForm(forms.Form):
+    service = forms.ChoiceField(
+        choices=[
+            ('dog_walking', 'Dog Walking'),
+            ('grooming', 'Grooming'), 
+            ('boarding', 'Boarding')
+        ],
+        label="Service"
+    )
+    pet_name = forms.CharField(max_length=100, label="Pet Name")
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label="Preferred Date")
+    time = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Preferred Time")
+    notes = forms.CharField(widget=forms.Textarea, required=False, label="Special Notes")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Field('service'),
+            Field('pet_name'),
+            Field('date'),
+            Field('time'),
+            Field('notes'),
+            Submit('submit', 'Book Now', css_class='btn btn-success w-100')
+        )
