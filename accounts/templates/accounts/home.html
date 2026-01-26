@@ -1,0 +1,36 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Pet Care Booker - Leicester{% endblock %}
+
+{% block content %}
+<div class="hero bg-primary text-white py-5 rounded mb-4">
+  <div class="container text-center">
+    <h1 class="display-4 fw-bold">Trusted Pet Care in Leicester</h1>
+    <p class="lead">Dog walking, grooming, boarding – book with confidence</p>
+    {% if user.is_authenticated %}
+      <a href="{% url 'profile' %}" class="btn btn-light btn-lg">My Bookings</a>
+    {% else %}
+      <a href="{% url 'signup' %}" class="btn btn-light btn-lg me-2">Get Started</a>
+      <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">Sign In</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row mb-5">
+  <div class="col-md-4 text-center">
+    <div class="icon mb-3">🐕</div>
+    <h3>Dog Walking</h3>
+    <p>£15/hour – insured walkers</p>
+  </div>
+  <div class="col-md-4 text-center">
+    <div class="icon mb-3">🛁</div>
+    <h3>Grooming</h3>
+    <p>£25/full groom</p>
+  </div>
+  <div class="col-md-4 text-center">
+    <div class="icon mb-3">🏠</div>
+    <h3>Boarding</h3>
+    <p>£30/night – home boarding</p>
+  </div>
+</div>
+{% endblock %}
