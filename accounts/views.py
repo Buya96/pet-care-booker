@@ -5,11 +5,11 @@ from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
 from django.contrib.auth.views import LoginView, LogoutView
-from django.views.generic import CreateView
+from django.views.generic import CreateView, FormView, TemplateView 
 from django.urls import reverse_lazy
-from .forms import SignUpForm
-from django.views.generic import TemplateView
-from .forms import BookingForm  
+from .forms import SignUpForm, BookingForm  # Add BookingForm
+
+
 
 # Create your views here.
 
