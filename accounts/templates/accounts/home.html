@@ -3,34 +3,81 @@
 {% block title %}Pet Care Booker - Leicester{% endblock %}
 
 {% block content %}
+<!-- Hero Section -->
 <div class="hero bg-primary text-white py-5 rounded mb-4">
   <div class="container text-center">
-    <h1 class="display-4 fw-bold">Trusted Pet Care in Leicester</h1>
-    <p class="lead">Dog walking, grooming, boarding – book with confidence</p>
+    <p class="text-uppercase mb-2 fw-semibold">Local, trusted & insured</p>
+    <h1 class="display-4 fw-bold mb-3">Trusted Pet Care in Leicester</h1>
+    <p class="lead mb-4">
+      Dog walking, grooming and boarding for busy pet parents who want peace of mind.
+    </p>
     {% if user.is_authenticated %}
-      <a href="{% url 'profile' %}" class="btn btn-light btn-lg">My Bookings</a>
+      <a href="{% url 'book' %}" class="btn btn-light btn-lg me-2">Book a service</a>
+      <a href="{% url 'profile' %}" class="btn btn-outline-light btn-lg">My profile</a>
     {% else %}
-      <a href="{% url 'signup' %}" class="btn btn-light btn-lg me-2">Get Started</a>
-      <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">Sign In</a>
+      <a href="{% url 'signup' %}" class="btn btn-light btn-lg me-2">Get started</a>
+      <a href="{% url 'services' %}" class="btn btn-outline-light btn-lg">View services</a>
     {% endif %}
   </div>
 </div>
 
-<div class="row mb-5">
+<!-- Why Choose Us -->
+<section class="mb-5">
+  <div class="row text-center g-4">
+    <div class="col-md-4">
+      <div class="fs-1 mb-3">✅</div>
+      <h3 class="h5 fw-bold mb-2">Fully insured carers</h3>
+      <p class="text-muted">
+        Every walker and sitter is background-checked and insured.
+      </p>
+    </div>
+    <div class="col-md-4">
+      <div class="fs-1 mb-3">📸</div>
+      <h3 class="h5 fw-bold mb-2">Photo updates</h3>
+      <p class="text-muted">
+        Get photos and notes from each visit so you never miss a moment.
+      </p>
+    </div>
+    <div class="col-md-4">
+      <div class="fs-1 mb-3">⭐</div>
+      <h3 class="h5 fw-bold mb-2">5-star local reviews</h3>
+      <p class="text-muted">
+        Loved by pet parents across Leicester and the surrounding area.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Services Preview -->
+<div class="row mb-5 g-4">
   <div class="col-md-4 text-center">
-    <div class="icon mb-3">🐕</div>
+    <div class="fs-1 mb-3">🐕</div>
     <h3>Dog Walking</h3>
-    <p>£15/hour – insured walkers</p>
+    <p class="lead">£15/hour – insured walkers</p>
+    <a href="{% url 'services' %}" class="btn btn-outline-primary">Learn more</a>
   </div>
   <div class="col-md-4 text-center">
-    <div class="icon mb-3">🛁</div>
+    <div class="fs-1 mb-3">🛁</div>
     <h3>Grooming</h3>
-    <p>£25/full groom</p>
+    <p class="lead">£25/full groom</p>
+    <a href="{% url 'services' %}" class="btn btn-outline-primary">Learn more</a>
   </div>
   <div class="col-md-4 text-center">
-    <div class="icon mb-3">🏠</div>
+    <div class="fs-1 mb-3">🏠</div>
     <h3>Boarding</h3>
-    <p>£30/night – home boarding</p>
+    <p class="lead">£30/night – home boarding</p>
+    <a href="{% url 'services' %}" class="btn btn-outline-primary">Learn more</a>
   </div>
 </div>
+
+<!-- Testimonial -->
+<section class="bg-light py-5 rounded">
+  <div class="container text-center">
+    <p class="mb-1 text-muted small text-uppercase">What pet parents say</p>
+    <p class="h4 fst-italic mb-2">
+      "Pet Care Booker made it so easy to book walks for our labrador Loki – he loves his walker!"
+    </p>
+    <p class="fw-semibold text-primary mb-0">– A very happy owner</p>
+  </div>
+</section>
 {% endblock %}
