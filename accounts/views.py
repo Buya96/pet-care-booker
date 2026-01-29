@@ -59,6 +59,12 @@ class BookingView(LoginRequiredMixin, FormView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
+        kwargs['user'] = self.request.user  # Pass logged-in user
         return kwargs
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user  # Ensure user is set
+        form.save()
+        return super().form_valid(form)
+
 
