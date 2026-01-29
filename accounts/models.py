@@ -24,3 +24,22 @@ def save_user_profile(sender, instance, **kwargs):
         instance.userprofile.save()
     except UserProfile.DoesNotExist:
         UserProfile.objects.create(user=instance)
+
+
+class Booking(models.Model):
+    SERVICE_CHOICES = [
+        ('dog_walking', 'Dog Walking'),
+        ('grooming', 'Grooming'),
+        ('boarding', 'Boarding'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    service = models.CharField(max_length=20, choices=SERVICE_CHOICES)
+    pet_name = models.CharField(max_length=100)
+    date = models.DateField()
+    time = models.TimeField()
+    notes = models.TextField(blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.pet_name} - {self.get_service_display()} on {self.date}"

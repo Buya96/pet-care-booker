@@ -8,6 +8,8 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.views.generic import CreateView, FormView, TemplateView 
 from django.urls import reverse_lazy
 from .forms import SignUpForm, BookingForm  # Add BookingForm
+from django.contrib.auth.mixins import LoginRequiredMixin
+
 
 
 
@@ -38,7 +40,9 @@ class ProfileView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user'] = self.request.user
+        context['bookings'] = Booking.objects.filter(user=self.request.user).order_by('-created')[:5]
         return context
+
 
 def home(request):
     return render(request, 'accounts/home.html')
@@ -46,13 +50,13 @@ def home(request):
 def services(request):
     return render(request, 'accounts/services.html')
 
-class BookingView(FormView):
+class BookingView(LoginRequiredMixin, FormView):
     template_name = 'accounts/booking.html'
     form_class = BookingForm
     success_url = '/profile/'
 
-    def form_valid(self, form):
-        # Save booking (simplified for MVP)
-        form.save()
-        return super().form_valid(form)
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 

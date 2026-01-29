@@ -47,34 +47,29 @@ class SignUpForm(UserCreationForm):
         return user
 
 
-class BookingForm(forms.Form):
-    service = forms.ChoiceField(
-        choices=[
-            ("dog_walking", "Dog Walking"),
-            ("grooming", "Grooming"),
-            ("boarding", "Boarding"),
-        ],
-        label="Service",
-    )
-    pet_name = forms.CharField(max_length=100, label="Pet Name")
-    date = forms.DateField(
-        widget=forms.DateInput(attrs={"type": "date"}), label="Preferred Date"
-    )
-    time = forms.TimeField(
-        widget=forms.TimeInput(attrs={"type": "time"}), label="Preferred Time"
-    )
-    notes = forms.CharField(
-        widget=forms.Textarea, required=False, label="Special Notes"
-    )
-
+class BookingForm(forms.ModelForm):
+    class Meta:
+        model = Booking
+        fields = ['service', 'pet_name', 'date', 'time', 'notes']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+            'time': forms.TimeInput(attrs={'type': 'time'}),
+        }
+    
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        self.user = user
         self.helper = FormHelper()
         self.helper.layout = Layout(
-            "service",
-            "pet_name",
-            "date",
-            "time",
-            "notes",
-            Submit("submit", "Book Now", css_class="btn btn-success w-100 mt-3"),
+            'service', 'pet_name', 'date', 'time', 'notes',
+            Submit('submit', 'Book Now', css_class='btn btn-success w-100 mt-3')
         )
+    
+    def save(self, commit=True):
+        booking = super().save(commit=False)
+        booking.user = self.user
+        if commit:
+            booking.save()
+        return booking
+

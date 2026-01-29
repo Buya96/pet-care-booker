@@ -7,9 +7,35 @@
   <div class="col-md-8">
     <h2>Welcome, {{ user.username }}!</h2>
     <p><strong>Email:</strong> {{ user.email }}</p>
-    <p><strong>Phone:</strong> {{ user.userprofile.phone|default:"Not set" }}</p>
-    <p><strong>Address:</strong> {{ user.userprofile.address|default:"Not set" }}</p>
+    {% if user.userprofile.phone %}
+      <p><strong>Phone:</strong> {{ user.userprofile.phone }}</p>
+    {% endif %}
+    {% if user.userprofile.address %}
+      <p><strong>Address:</strong> {{ user.userprofile.address }}</p>
+    {% endif %}
+    
+    <h3 class="mt-5">Recent Bookings</h3>
+    {% if bookings %}
+      <div class="row g-3">
+        {% for booking in bookings %}
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <h6 class="card-title">{{ booking.get_service_display }}</h6>
+                <p class="card-text">
+                  <strong>{{ booking.pet_name }}</strong><br>
+                  {{ booking.date }} at {{ booking.time }}<br>
+                  {{ booking.notes|default:"No notes" }}
+                </p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">No bookings yet. <a href="{% url 'book' %}">Book your first service</a>.</p>
+    {% endif %}
   </div>
 </div>
-<a href="{% url 'logout' %}" class="btn btn-outline-danger">Logout</a>
+<a href="{% url 'book' %}" class="btn btn-primary mt-3">Book New Service</a>
 {% endblock %}
