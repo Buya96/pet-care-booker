@@ -139,17 +139,23 @@ CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
 
 # Production
-import dj_database_url
-DATABASES['default'] = dj_database_url.parse(os.environ.get('postgresql://neondb_owner:npg_8hovRyXafJW4@ep-shy-dawn-agpn7wlc.c-2.eu-central-1.aws.neon.tech/pecan_wipe_agony_577897'))
+try:
+    import dj_database_url
+except ImportError:
+    dj_database_url = None
+
+# Later (DATABASES section):
+if dj_database_url:
+    DATABASES['default'] = dj_database_url.parse(os.environ.get('postgresql://neondb_owner:npg_8hovRyXafJW4@ep-shy-dawn-agpn7wlc.c-2.eu-central-1.aws.neon.tech/pecan_wipe_agony_577897'))
 ALLOWED_HOSTS = ['*']
-MIDDLEWARE.insert(0, 'whitenoise.middleware.WhiteNoiseMiddleware')
+#MIDDLEWARE.insert(0, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 
 # Static files (CSS, JavaScript, Images)
-MIDDLEWARE.insert(0, 'whitenoise.middleware.WhiteNoiseMiddleware')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+#MIDDLEWARE.insert(0, 'whitenoise.middleware.WhiteNoiseMiddleware')
+#STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 ALLOWED_HOSTS = ['*']  # CI demo only
