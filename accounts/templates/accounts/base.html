@@ -23,7 +23,7 @@
             <a class="nav-link" href="{% url 'services' %}">Services</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">Bookings</a>
+            <a class="nav-link" href="{% url 'bookings' %}">Bookings</a>
           </li>
         </ul>
         <ul class="navbar-nav">
@@ -33,10 +33,10 @@
                 Hi, {{ user.username }}
               </a>
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#">My Bookings</a></li>
-                <li><a class="dropdown-item" href="#">Profile</a></li>
+                <li><a class="dropdown-item" href="{% url 'bookings' %}">My Bookings</a></li>
+                <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="/accounts/logout/">Logout</a></li>
+                <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
               </ul>
             </li>
           {% else %}

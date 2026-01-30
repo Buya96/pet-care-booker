@@ -5,7 +5,9 @@ from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
 from django.contrib.auth.views import LoginView, LogoutView
-from django.views.generic import CreateView, FormView, TemplateView 
+from django.views.generic import CreateView, FormView, TemplateView
+from django.views.generic.list import ListView
+from django.views.generic.edit import UpdateView, DeleteView
 from django.urls import reverse_lazy
 from .forms import SignUpForm, BookingForm  # Add BookingForm
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -67,4 +69,37 @@ class BookingView(LoginRequiredMixin, FormView):
         form.save()
         return super().form_valid(form)
 
+class UserBookingsView(ListView):
+    model = Booking
+    template_name = 'accounts/bookings.html'
+    context_object_name = 'bookings'
+    paginate_by = 10
+    
+    def get_queryset(self):
+        return Booking.objects.filter(user=self.request.user).order_by('-created')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context
+    
+class BookingUpdateView(LoginRequiredMixin, UpdateView):
+    model = Booking
+    fields = ['service', 'pet_name', 'date', 'time', 'notes']
+    template_name = 'accounts/booking_form.html'
+    
+    def get_queryset(self):
+        return Booking.objects.filter(user=self.request.user)
+    
+    def get_success_url(self):
+        return reverse_lazy('bookings')
 
+class BookingDeleteView(LoginRequiredMixin, DeleteView):
+    model = Booking
+    template_name = 'accounts/booking_confirm_delete.html'
+    
+    def get_queryset(self):
+        return Booking.objects.filter(user=self.request.user)
+    
+    def get_success_url(self):
+        return reverse_lazy('bookings')

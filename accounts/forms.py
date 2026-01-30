@@ -4,7 +4,7 @@ from crispy_forms.layout import Layout, Field, Submit
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
-from .models import UserProfile
+from .models import UserProfile, Booking
 
 User = get_user_model()
 
@@ -55,7 +55,7 @@ class BookingForm(forms.ModelForm):
             'date': forms.DateInput(attrs={'type': 'date'}),
             'time': forms.TimeInput(attrs={'type': 'time'}),
         }
-    
+
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
@@ -65,11 +65,10 @@ class BookingForm(forms.ModelForm):
             'service', 'pet_name', 'date', 'time', 'notes',
             Submit('submit', 'Book Now', css_class='btn btn-success w-100 mt-3')
         )
-    
+
     def save(self, commit=True):
         booking = super().save(commit=False)
         booking.user = self.user
         if commit:
             booking.save()
         return booking
-
