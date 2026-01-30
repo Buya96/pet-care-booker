@@ -41,15 +41,29 @@
 <script src="https://js.stripe.com/v3/"></script>
 <script>
 const stripe = Stripe('pk_test_51Sv6GIEMFGmjP42qc1Pj358IZI2xcUeg9tDqqvBPVeJ0A5e4iHQ5ETIpWPoxvk8BhOoiYdXBLlHSzupkJZIzxcOH00pmfgJ8Uc'); 
-document.getElementById('pay-button').addEventListener('click', async () => {
-  const service = document.querySelector('[name="service"]').value;
+
+document.getElementById('pay-button').onclick = async function() {
+  const service = document.querySelector('select[name="service"]').value;
+  console.log('Pay clicked, service:', service);
+  
   const response = await fetch('/accounts/pay/', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({service})
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+    body: JSON.stringify({service: service})
   });
-  const session = await response.json();
-  stripe.redirectToCheckout({sessionId: session.id});
-});
+  
+  if (response.ok) {
+    const session = await response.json();
+    console.log('Session ID:', session.id);
+    stripe.redirectToCheckout({sessionId: session.id});
+  } else {
+    console.error('Payment failed');
+  }
+};
 </script>
+
+
 {% endblock %}

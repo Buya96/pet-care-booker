@@ -109,11 +109,14 @@ class BookingDeleteView(LoginRequiredMixin, DeleteView):
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def create_checkout_session(request):
-    if request.method == 'POST':
-        service = request.POST.get('service', 'boarding')
-        prices = {'dog_walking': 3000, 'grooming': 2500, 'boarding': 3500}
-        price = prices.get(service, 3000)  # GBP cents
-        
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=400)
+    
+    service = request.POST.get('service', 'boarding')
+    prices = {'dog_walking': 3000, 'grooming': 2500, 'boarding': 3500}
+    price = prices.get(service, 3000)
+    
+    try:
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
@@ -129,5 +132,5 @@ def create_checkout_session(request):
             cancel_url=request.build_absolute_uri('/cancel/'),
         )
         return JsonResponse({'id': session.id})
-    
-    return JsonResponse({'error': 'POST required'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
