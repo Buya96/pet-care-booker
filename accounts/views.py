@@ -1,6 +1,8 @@
 # Signup view
 # User story: Visitors can create an account with additional profile information.
-
+import stripe
+from django.conf import settings
+from django.http import JsonResponse
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
@@ -103,3 +105,29 @@ class BookingDeleteView(LoginRequiredMixin, DeleteView):
     
     def get_success_url(self):
         return reverse_lazy('bookings')
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+def create_checkout_session(request):
+    if request.method == 'POST':
+        service = request.POST.get('service', 'boarding')
+        prices = {'dog_walking': 3000, 'grooming': 2500, 'boarding': 3500}
+        price = prices.get(service, 3000)  # GBP cents
+        
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'gbp',
+                    'product_data': {'name': service.replace('_', ' ').title()},
+                    'unit_amount': price,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=request.build_absolute_uri('/success/'),
+            cancel_url=request.build_absolute_uri('/cancel/'),
+        )
+        return JsonResponse({'id': session.id})
+    
+    return JsonResponse({'error': 'POST required'}, status=400)
