@@ -43,7 +43,7 @@ ROOT_URLCONF = 'pet_care_booker.urls'
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.djangoTemplates',
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -56,6 +56,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 WSGI_APPLICATION = 'pet_care_booker.wsgi.application'
 
