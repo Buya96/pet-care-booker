@@ -24,9 +24,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'whitenoise.runserver_nostatic',  # Whitenoise for development
-    'accounts',  
+    'whitenoise.runserver_nostatic',
+    "crispy_forms",
+    "crispy_bootstrap5",
+    'accounts',
 ]
+
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = ("bootstrap5",)
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',  # FIXED: Whitenoise first
