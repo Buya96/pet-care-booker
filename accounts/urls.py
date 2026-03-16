@@ -1,17 +1,28 @@
-# Commit 2: Auth URLs + Pay
 from django.urls import path
-from . import views
-from django.contrib.auth.views import LogoutView
+from .views import (
+    SignUpView,
+    CustomLoginView,
+    CustomLogoutView,
+    ProfileView,
+    BookingView,
+    UserBookingsView,
+    BookingUpdateView,
+    BookingDeleteView,
+    home,
+    services,
+)
 
 urlpatterns = [
-    path('signup/', views.SignUpView.as_view(), name='signup'),
-    path('login/', views.login, name='login'),
-    path('logout/', LogoutView.as_view(next_page='home'), name='logout'),
-    path('pay/', views.create_checkout_session, name='pay'),
-    path('profile/', views.ProfileView.as_view(), name='profile'),
-    path('services/', views.services, name='services'),
-    path('book/', views.BookingView.as_view(), name='book'),
-    path('booking/<int:pk>/update/', views.BookingUpdateView.as_view(), name='booking_update'),
-    path('booking/<int:pk>/delete/', views.BookingDeleteView.as_view(), name='booking_delete'),
-    path('bookings/', views.UserBookingsView.as_view(), name='bookings'),
+    path("", home, name="home"),
+    path("services/", services, name="services"),
+
+    path("signup/", SignUpView.as_view(), name="signup"),
+    path("login/", CustomLoginView.as_view(), name="login"),
+    path("logout/", CustomLogoutView.as_view(), name="logout"),
+
+    path("profile/", ProfileView.as_view(), name="profile"),
+    path("book/", BookingView.as_view(), name="book"),
+    path("bookings/", UserBookingsView.as_view(), name="bookings"),
+    path("bookings/<int:pk>/edit/", BookingUpdateView.as_view(), name="booking_edit"),
+    path("bookings/<int:pk>/delete/", BookingDeleteView.as_view(), name="booking_delete"),
 ]

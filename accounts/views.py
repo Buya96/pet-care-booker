@@ -1,9 +1,8 @@
 import stripe
-import stripe
 
 from django.conf import settings
 from django.http import JsonResponse
-from django.contrib.auth import login
+# from django.contrib.auth import login 
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import render, redirect
 from django.views.generic import CreateView, FormView, TemplateView
@@ -24,10 +23,8 @@ class SignUpView(CreateView):
     success_url = "/accounts/login/"
 
     def form_valid(self, form):
-        # Let CreateView handle saving and success_url
         response = super().form_valid(form)
-        # self.object is the newly created user
-        login(self.request, self.object)
+        auth.login(self.request, self.object)
         return response
 
 
