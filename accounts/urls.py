@@ -28,3 +28,4 @@ urlpatterns = [
     path("bookings/<int:pk>/edit/", BookingUpdateView.as_view(), name="booking_update"),
     path("bookings/<int:pk>/delete/", BookingDeleteView.as_view(), name="booking_delete"),
 ]
+
