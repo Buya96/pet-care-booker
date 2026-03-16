@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+
 class UserProfile(models.Model):
     """Extra user info for pet bookings"""
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -13,10 +14,12 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s profile"
 
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
+
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
@@ -41,5 +44,11 @@ class Booking(models.Model):
     notes = models.TextField(blank=True)
     created = models.DateTimeField(auto_now_add=True)
     
+    # ---------- NEW FIELDS FOR PAYMENTS ----------
+    paid = models.BooleanField(default=False)  # <-- TRACKS PAID STATUS
+    stripe_payment_intent = models.CharField(max_length=200, blank=True, null=True)  # Stripe payment ID
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # £25.00
+    
     def __str__(self):
-        return f"{self.pet_name} - {self.get_service_display()} on {self.date}"
+        status = "PAID" if self.paid else "Pending"
+        return f"{self.pet_name} - {self.get_service_display()} on {self.date} [{status}]"
