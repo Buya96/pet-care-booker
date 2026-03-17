@@ -1,11 +1,11 @@
 import stripe
-import json  # <-- ADDED for JSON body parsing
+import json  # for JSON body parsing
 
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.contrib.auth import login  # <-- UNCOMMENTED (needed for SignUpView)
+from django.views.decorators.http import require_http_methods, require_POST
+from django.contrib.auth import login  # needed for SignUpView
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import render, redirect
 from django.views.generic import CreateView, FormView, TemplateView
@@ -76,9 +76,16 @@ class BookingView(LoginRequiredMixin, FormView):
         return kwargs
 
     def form_valid(self, form):
-        form.instance.user = self.request.user
-        form.save()
-        return super().form_valid(form)
+        # Create & save Booking first
+        booking = form.save(commit=False)
+        booking.user = self.request.user
+        booking.save()
+        
+        # Store booking.pk in session for checkout (webhook will use metadata)
+        self.request.session['pending_booking_id'] = booking.pk
+        
+        # Redirect to same page but trigger Stripe checkout
+        return redirect('pay')  # Assumes /pay/ URL exists
 
 class UserBookingsView(LoginRequiredMixin, ListView):
     model = Booking
@@ -121,17 +128,22 @@ class BookingDeleteView(LoginRequiredMixin, DeleteView):
     def get_success_url(self):
         return reverse_lazy("bookings")
 
-# ---------- STRIPE (FULLY FIXED) ----------
-@csrf_exempt  # <-- ADDED: allows JS POST without CSRF cookie
-@require_http_methods(["POST"])  # <-- ADDED: enforces POST only
+# ---------- STRIPE ----------
+@csrf_exempt
+@require_http_methods(["POST"])
 def create_checkout_session(request):
     try:
-        # Parse JSON body from JS fetch()  <-- FIXED: was request.POST (empty for JSON)
+        # Parse JSON body from JS fetch()
         data = json.loads(request.body.decode("utf-8"))
         service = data.get("service", "boarding")
         
         prices = {"dog_walking": 3000, "grooming": 2500, "boarding": 3500}
         price = prices.get(service, 3000)
+
+        # Get pending booking ID from session
+        booking_id = request.session.get('pending_booking_id')
+        if not booking_id:
+            return JsonResponse({"error": "No booking found"}, status=400)
 
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
@@ -148,9 +160,38 @@ def create_checkout_session(request):
                 }
             ],
             mode="payment",
-            success_url=request.build_absolute_uri("/profile/"),  # <-- FIXED: use existing URL
-            cancel_url=request.build_absolute_uri("/book/"),     # <-- FIXED: use existing URL
+            success_url=request.build_absolute_uri("/profile/"),
+            cancel_url=request.build_absolute_uri("/book/"),
+            metadata={'booking_id': str(booking_id)},  # Key: pass booking ID to webhook
         )
         return JsonResponse({"id": session.id})
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=400)
+        return JsonResponse({"error": str(e)}, status=400)  # Fixed syntax
+
+# ---------- STRIPE WEBHOOK ----------
+@csrf_exempt
+@require_POST
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
+    endpoint_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', None)
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except ValueError:
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError:
+        return HttpResponse(status=400)
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        booking_id = session.metadata.get('booking_id')
+        if booking_id:
+            booking = Booking.objects.get(id=int(booking_id), user=request.user)  # Secure: filter by user if possible
+            booking.paid = True
+            booking.save()
+            print(f"Booking {booking_id} marked as paid!")  # For logs
+
+    return HttpResponse(status=200)

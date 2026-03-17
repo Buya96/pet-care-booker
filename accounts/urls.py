@@ -1,31 +1,18 @@
 from django.urls import path
-from .views import (
-    SignUpView,
-    CustomLoginView,
-    CustomLogoutView,
-    ProfileView,
-    BookingView,
-    UserBookingsView,
-    BookingUpdateView,
-    BookingDeleteView,
-    home,
-    services,
-    create_checkout_session,
-)
+from . import views
+
 
 urlpatterns = [
-    path("", home, name="home"),
-    path("services/", services, name="services"),
-    path("pay/", create_checkout_session, name="pay"),
-
-    path("signup/", SignUpView.as_view(), name="signup"),
-    path("login/", CustomLoginView.as_view(), name="login"),
-    path("logout/", CustomLogoutView.as_view(), name="logout"),
-
-    path("profile/", ProfileView.as_view(), name="profile"),
-    path("book/", BookingView.as_view(), name="book"),
-    path("bookings/", UserBookingsView.as_view(), name="bookings"),
-    path("bookings/<int:pk>/edit/", BookingUpdateView.as_view(), name="booking_update"),
-    path("bookings/<int:pk>/delete/", BookingDeleteView.as_view(), name="booking_delete"),
+    path('', views.home, name='home'),
+    path('signup/', views.SignUpView.as_view(), name='signup'),
+    path('login/', views.CustomLoginView.as_view(), name='login'),
+    path('logout/', views.CustomLogoutView.as_view(), name='logout'),
+    path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('services/', views.services, name='services'),
+    path('book/', views.BookingView.as_view(), name='book'),
+    path('bookings/', views.UserBookingsView.as_view(), name='bookings'),
+    path('bookings/<int:pk>/edit/', views.BookingUpdateView.as_view(), name='booking_update'),
+    path('bookings/<int:pk>/delete/', views.BookingDeleteView.as_view(), name='booking_delete'),
+    path('pay/', views.create_checkout_session, name='pay'),
+    path('webhook/', views.stripe_webhook, name='stripe_webhook'),
 ]
-
