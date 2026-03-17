@@ -1,26 +1,26 @@
 import stripe
-import json  # for JSON body parsing
+import json
 
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods, require_POST
-from django.contrib.auth import login  # needed for SignUpView
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth import login
 from django.contrib.auth.views import LoginView, LogoutView
-from django.shortcuts import render, redirect
-from django.views.generic import CreateView, FormView, TemplateView
-from django.views.generic.list import ListView
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import CreateView, FormView, TemplateView, ListView
 from django.views.generic.edit import UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
 
 from .forms import SignUpForm, BookingForm
 from .models import Booking
 
-# ---------- Stripe Config ----------
-stripe.api_key = settings.STRIPE_SECRET_KEY
 
-# ---------- Auth / Signup ----------
+stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', None)
+
+
 class SignUpView(CreateView):
     form_class = SignUpForm
     template_name = "accounts/signup.html"
@@ -31,6 +31,7 @@ class SignUpView(CreateView):
         login(self.request, self.object)
         return response
 
+
 class CustomLoginView(LoginView):
     template_name = "accounts/login.html"
     redirect_authenticated_user = True
@@ -38,10 +39,11 @@ class CustomLoginView(LoginView):
     def get_success_url(self):
         return "/"
 
+
 class CustomLogoutView(LogoutView):
     next_page = reverse_lazy("home")
 
-# ---------- Profile / Static pages ----------
+
 class ProfileView(LoginRequiredMixin, TemplateView):
     template_name = "accounts/profile.html"
     login_url = "login"
@@ -50,23 +52,22 @@ class ProfileView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["user"] = self.request.user
-        context["bookings"] = (
-            Booking.objects.filter(user=self.request.user)
-            .order_by("-created")[:5]
-        )
+        context["bookings"] = Booking.objects.filter(user=self.request.user).order_by("-created")[:5]
+        context["STRIPE_PUBLIC_KEY"] = getattr(settings, "STRIPE_PUBLISHABLE_KEY", "")
         return context
+
 
 def home(request):
     return render(request, "accounts/home.html")
 
+
 def services(request):
     return render(request, "accounts/services.html")
 
-# ---------- Bookings ----------
+
 class BookingView(LoginRequiredMixin, FormView):
     template_name = "accounts/booking.html"
     form_class = BookingForm
-    success_url = reverse_lazy("profile")
     login_url = "login"
     redirect_field_name = "next"
 
@@ -75,17 +76,17 @@ class BookingView(LoginRequiredMixin, FormView):
         kwargs["user"] = self.request.user
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["STRIPE_PUBLIC_KEY"] = getattr(settings, "STRIPE_PUBLISHABLE_KEY", "")
+        return context
+
     def form_valid(self, form):
-        # Create & save Booking first
         booking = form.save(commit=False)
         booking.user = self.request.user
         booking.save()
-        
-        # Store booking.pk in session for checkout (webhook will use metadata)
-        self.request.session['pending_booking_id'] = booking.pk
-        
-        # Redirect to same page but trigger Stripe checkout
-        return redirect('pay')  # Assumes /pay/ URL exists
+        return redirect("profile")
+
 
 class UserBookingsView(LoginRequiredMixin, ListView):
     model = Booking
@@ -103,6 +104,7 @@ class UserBookingsView(LoginRequiredMixin, ListView):
         context["user"] = self.request.user
         return context
 
+
 class BookingUpdateView(LoginRequiredMixin, UpdateView):
     model = Booking
     fields = ["service", "pet_name", "date", "time", "notes"]
@@ -116,6 +118,7 @@ class BookingUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse_lazy("bookings")
 
+
 class BookingDeleteView(LoginRequiredMixin, DeleteView):
     model = Booking
     template_name = "accounts/booking_confirm_delete.html"
@@ -128,22 +131,34 @@ class BookingDeleteView(LoginRequiredMixin, DeleteView):
     def get_success_url(self):
         return reverse_lazy("bookings")
 
-# ---------- STRIPE ----------
+
+# STRIPE – PAY FOR A SPECIFIC BOOKING
 @csrf_exempt
 @require_http_methods(["POST"])
 def create_checkout_session(request):
+    print("=== PAY HIT ===")
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Authentication required."}, status=401)
+
     try:
-        # Parse JSON body from JS fetch()
         data = json.loads(request.body.decode("utf-8"))
         service = data.get("service", "boarding")
-        
+        booking_id = data.get("booking_id")  # Make sure front‑end passes this
+
+        if not booking_id:
+            return JsonResponse({"error": "Missing booking_id."}, status=400)
+
+        booking = get_object_or_404(
+            Booking, id=booking_id, user=request.user, paid=False
+        )
+
         prices = {"dog_walking": 3000, "grooming": 2500, "boarding": 3500}
         price = prices.get(service, 3000)
 
-        # Get pending booking ID from session
-        booking_id = request.session.get('pending_booking_id')
-        if not booking_id:
-            return JsonResponse({"error": "No booking found"}, status=400)
+        success_url = "{base}accounts/payment-success/{bid}/".format(
+            base=request.build_absolute_uri("/"),
+            bid=booking.id,
+        )
 
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
@@ -152,7 +167,7 @@ def create_checkout_session(request):
                     "price_data": {
                         "currency": "gbp",
                         "product_data": {
-                            "name": service.replace("_", " ").title()
+                            "name": f"{service.replace('_', ' ').title()} - {booking.pet_name}"
                         },
                         "unit_amount": price,
                     },
@@ -160,38 +175,26 @@ def create_checkout_session(request):
                 }
             ],
             mode="payment",
-            success_url=request.build_absolute_uri("/profile/"),
-            cancel_url=request.build_absolute_uri("/book/"),
-            metadata={'booking_id': str(booking_id)},  # Key: pass booking ID to webhook
+            success_url=success_url,
+            cancel_url=request.build_absolute_uri("/accounts/book/"),
         )
+        print(f"Pay session for booking {booking.id}: {session.id}")
         return JsonResponse({"id": session.id})
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=400)  # Fixed syntax
+        print(f"Pay error: {e}")
+        return JsonResponse({"error": str(e)}, status=400)
 
-# ---------- STRIPE WEBHOOK ----------
-@csrf_exempt
-@require_POST
-def stripe_webhook(request):
-    payload = request.body
-    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
-    endpoint_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', None)
 
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
+# PAYMENT SUCCESS – CONFIRM A SPECIFIC BOOKING
+def payment_success(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    if not booking.paid:
+        booking.paid = True
+        booking.save()
+        messages.success(
+            request,
+            f"✅ Payment complete! '{booking.pet_name} - {booking.get_service_display()}' is PAID.",
         )
-    except ValueError:
-        return HttpResponse(status=400)
-    except stripe.error.SignatureVerificationError:
-        return HttpResponse(status=400)
-
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        booking_id = session.metadata.get('booking_id')
-        if booking_id:
-            booking = Booking.objects.get(id=int(booking_id), user=request.user)  # Secure: filter by user if possible
-            booking.paid = True
-            booking.save()
-            print(f"Booking {booking_id} marked as paid!")  # For logs
-
-    return HttpResponse(status=200)
+    else:
+        messages.info(request, f"'{booking.pet_name}' already paid.")
+    return redirect("bookings")  # ← this was broken

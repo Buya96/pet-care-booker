@@ -11,27 +11,33 @@
         <h2>Book Your Pet Care Service</h2>
       </div>
       <div class="card-body">
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
         <form method="post" id="booking-form">
           {% csrf_token %}
           {{ form|crispy }}
-          
+
           <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-3">
-            <button type="submit" class="btn btn-success flex-fill me-md-2">
-              Book Now (Save Only)
+            <button type="submit" class="btn btn-success flex-fill me-md-2" id="book-btn">
+              Create Booking
             </button>
             <button type="button" id="pay-button" class="btn btn-primary flex-fill">
-              Pay Securely with Stripe
+              Pay £30 with Stripe
             </button>
           </div>
         </form>
 
         <div class="mt-3 text-center">
-          <a href="{% url 'services' %}" class="btn btn-outline-secondary me-2">
-            ← Back to Services
-          </a>
-          <a href="{% url 'home' %}" class="btn btn-outline-secondary">
-            Home
-          </a>
+          <a href="{% url 'services' %}" class="btn btn-outline-secondary me-2">← Back to Services</a>
+          <a href="{% url 'profile' %}" class="btn btn-outline-secondary me-2">My Profile</a>
+          <a href="{% url 'bookings' %}" class="btn btn-outline-secondary">My Bookings</a>
         </div>
       </div>
     </div>
@@ -40,30 +46,84 @@
 
 <script src="https://js.stripe.com/v3/"></script>
 <script>
-const stripe = Stripe('pk_test_51Sv6GIEMFGmjP42qc1Pj358IZI2xcUeg9tDqqvBPVeJ0A5e4iHQ5ETIpWPoxvk8BhOoiYdXBLlHSzupkJZIzxcOH00pmfgJ8Uc'); 
+  const stripe = Stripe('{{ STRIPE_PUBLIC_KEY }}');
+  const payBtn = document.getElementById('pay-button');
 
-document.getElementById('pay-button').onclick = async function() {
-  const service = document.querySelector('select[name="service"]').value;
-  console.log('Pay clicked, service:', service);
-  
-  const response = await fetch('/accounts/pay/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-    },
-    body: JSON.stringify({service: service})
-  });
-  
-  if (response.ok) {
-    const session = await response.json();
-    console.log('Session ID:', session.id);
-    stripe.redirectToCheckout({sessionId: session.id});
-  } else {
-    console.error('Payment failed');
+  // Disable pay button until we have a booking
+  payBtn.disabled = true;
+  payBtn.textContent = 'Book first, then pay';
+
+  // Update button text when service changes
+  const serviceSelect = document.querySelector('select[name="service"]');
+  if (serviceSelect) {
+    const prices = {dog_walking: '30', grooming: '25', boarding: '35'};
+    serviceSelect.addEventListener('change', function () {
+      const service = this.value;
+      payBtn.textContent = `Pay £${prices[service] || '30'} with Stripe`;
+    });
   }
-};
+
+  // When the form is submitted (create booking),
+  // allow the Pay button to work and set the most recent booking_id
+  document.getElementById('booking-form').onsubmit = function (e) {
+    // After the form is POSTed, on the *next* page load, we can pay.
+    // In practice, you will want to:
+    // 1. Redirect from views.py after booking.save() to `booking` again with `booking_id`
+    // 2. OR, instead, on success, enable the Pay button and pass the new booking_id.
+    // For now, this just shows the idea:
+    payBtn.disabled = false;
+    payBtn.textContent = 'Pay with Stripe';
+  };
+
+  // Pay button click
+  payBtn.onclick = async () => {
+    if (payBtn.disabled) return;
+
+    payBtn.disabled = true;
+    payBtn.textContent = 'Redirecting to Stripe...';
+
+    // IMPORTANT: you need to get the correct booking_id here
+    // For now we assume you render it into the template as a hidden field or JS var
+    // Example in your template:
+    // <script>
+    //   window.bookingId = {{ booking.id }};  // or pass from backend
+    // </script>
+    const bookingId = window.bookingId;  // define this in your view or template
+    if (!bookingId) {
+      alert('No booking selected. Create a booking first.');
+      payBtn.disabled = false;
+      payBtn.textContent = 'Pay with Stripe';
+      return;
+    }
+
+    const service = serviceSelect ? serviceSelect.value : 'boarding';
+
+    try {
+      const response = await fetch('/accounts/create-checkout-session/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: JSON.stringify({ service: service, booking_id: bookingId }),
+      });
+
+      const result = await response.json();
+      if (result.error) {
+        alert('Payment setup failed: ' + result.error);
+        payBtn.disabled = false;
+        payBtn.textContent = 'Pay with Stripe';
+        return;
+      }
+
+      // Use the new way: redirect to session.url
+      window.location.href = result.url;  // returned from create_checkout_session
+    } catch (error) {
+      console.error('Stripe error:', error);
+      alert('Connection error—try again');
+      payBtn.disabled = false;
+      payBtn.textContent = 'Pay with Stripe';
+    }
+  };
 </script>
-
-
 {% endblock %}
