@@ -7,7 +7,6 @@ from . import views  # For home view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.home, name='home'), 
-    path('accounts/', include('accounts.urls')),  # ONLY THIS LINE
-    # DELETE: path('', include('accounts.urls')),  # Duplicate!
+    path('accounts/', include('accounts.urls')),  # All accounts URLs
+    path('', include('accounts.urls')),  # Home + services accessible from root
 ]
