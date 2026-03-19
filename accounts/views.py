@@ -1,30 +1,30 @@
-import stripe
 import json
+import stripe
 
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import LoginView, LogoutView
 from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse, reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.contrib.auth import login
-from django.contrib.auth.views import LoginView, LogoutView
-from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import CreateView, FormView, TemplateView, ListView
 from django.views.generic.edit import UpdateView, DeleteView
-from django.urls import reverse_lazy
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib import messages
 
 from .forms import SignUpForm, BookingForm
 from .models import Booking
 
 
-stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', None)
+stripe.api_key = getattr(settings, "STRIPE_SECRET_KEY", None)
 
 
 class SignUpView(CreateView):
     form_class = SignUpForm
     template_name = "accounts/signup.html"
-    success_url = "/accounts/login/"
+    success_url = "/login/"
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -53,7 +53,7 @@ class ProfileView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context["user"] = self.request.user
         context["bookings"] = Booking.objects.filter(user=self.request.user).order_by("-created")[:5]
-        context['STRIPE_PUBLIC_KEY'] = getattr(settings, 'STRIPE_PUBLISHABLE_KEY', '')
+        context["STRIPE_PUBLIC_KEY"] = getattr(settings, "STRIPE_PUBLISHABLE_KEY", "")
         return context
 
 
@@ -76,16 +76,20 @@ class BookingView(LoginRequiredMixin, FormView):
         kwargs["user"] = self.request.user
         return kwargs
 
+    def get_booking_from_query(self):
+        booking_id = self.request.GET.get("booking_id")
+        if not booking_id:
+            return None
+        return Booking.objects.filter(
+            id=booking_id,
+            user=self.request.user,
+            paid=False
+        ).first()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['STRIPE_PUBLIC_KEY'] = getattr(settings, 'STRIPE_PUBLISHABLE_KEY', '')
-        
-        # Pass latest unpaid booking for Pay button
-        if self.request.user.is_authenticated:
-            context['booking'] = Booking.objects.filter(
-                user=self.request.user, 
-                paid=False
-            ).order_by('-created').first()
+        context["STRIPE_PUBLIC_KEY"] = getattr(settings, "STRIPE_PUBLISHABLE_KEY", "")
+        context["booking"] = self.get_booking_from_query()
         return context
 
     def form_valid(self, form):
@@ -93,7 +97,8 @@ class BookingView(LoginRequiredMixin, FormView):
         booking.user = self.request.user
         booking.save()
         messages.success(self.request, f"Booking created for {booking.pet_name}!")
-        return redirect('book')  # Stay on page with booking context
+        book_url = reverse("book")
+        return redirect(f"{book_url}?booking_id={booking.id}")
 
 
 class UserBookingsView(LoginRequiredMixin, ListView):
@@ -124,6 +129,7 @@ class BookingUpdateView(LoginRequiredMixin, UpdateView):
         return Booking.objects.filter(user=self.request.user)
 
     def get_success_url(self):
+        messages.success(self.request, "Booking updated successfully.")
         return reverse_lazy("bookings")
 
 
@@ -137,15 +143,13 @@ class BookingDeleteView(LoginRequiredMixin, DeleteView):
         return Booking.objects.filter(user=self.request.user)
 
     def get_success_url(self):
+        messages.success(self.request, "Booking deleted successfully.")
         return reverse_lazy("bookings")
 
 
-# STRIPE PAYMENT - PERFECTLY MATCHES FRONTEND
 @csrf_exempt
 @require_http_methods(["POST"])
 def create_checkout_session(request):
-    print("=== PAY HIT ===")
-    
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Please log in first."}, status=401)
 
@@ -157,56 +161,63 @@ def create_checkout_session(request):
         if not booking_id:
             return JsonResponse({"error": "Missing booking_id."}, status=400)
 
-        # Get exact booking
         booking = get_object_or_404(
-            Booking, 
-            id=booking_id, 
-            user=request.user, 
+            Booking,
+            id=booking_id,
+            user=request.user,
             paid=False
         )
 
-        prices = {"dog_walking": 3000, "grooming": 2500, "boarding": 3500}
+        prices = {
+            "dog_walking": 3000,
+            "grooming": 2500,
+            "boarding": 3500,
+        }
         price = prices.get(service, 3000)
 
-        success_url = f"{request.build_absolute_uri('/accounts/payment-success/')}{booking.id}/"
+        success_url = request.build_absolute_uri(
+            reverse("payment-success", args=[booking.id])
+        )
+        cancel_url = request.build_absolute_uri(
+            reverse("book")
+        ) + f"?booking_id={booking.id}"
 
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "gbp",
-                    "product_data": {
-                        "name": f"{service.replace('_', ' ').title()} - {booking.pet_name}"
+            line_items=[
+                {
+                    "price_data": {
+                        "currency": "gbp",
+                        "product_data": {
+                            "name": f"{service.replace('_', ' ').title()} - {booking.pet_name}"
+                        },
+                        "unit_amount": price,
                     },
-                    "unit_amount": price,
-                },
-                "quantity": 1,
-            }],
+                    "quantity": 1,
+                }
+            ],
             mode="payment",
             success_url=success_url,
-            cancel_url=request.build_absolute_uri("/accounts/book/"),
+            cancel_url=cancel_url,
         )
-        
-        print(f"Pay session for booking {booking.id}: {session.id}")
-        return JsonResponse({"url": session.url})  # ← Frontend uses this!
-        
+
+        return JsonResponse({"url": session.url})
+
     except Exception as e:
-        print(f"Pay error: {e}")
         return JsonResponse({"error": str(e)}, status=400)
 
 
-# PAYMENT SUCCESS - MARK SPECIFIC BOOKING PAID
 def payment_success(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
-    
+
     if not booking.paid:
         booking.paid = True
         booking.save()
         messages.success(
             request,
-            f"✅ Payment complete! '{booking.pet_name} - {booking.get_service_display()}' is now PAID."
+            f"Payment complete for {booking.pet_name}."
         )
     else:
-        messages.info(request, f"'{booking.pet_name}' already paid.")
-    
+        messages.info(request, f"{booking.pet_name} is already paid.")
+
     return redirect("bookings")
