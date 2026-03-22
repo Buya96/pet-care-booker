@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-p(hs!$!hf_d)sqlb^40#7_!e)=j&np*q+h80v%172_ole_ueqr')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+
 
 # Application hosts
 ALLOWED_HOSTS = ['pet-care-booker-62152b813817.herokuapp.com', '127.0.0.1', 'localhost', '*']
