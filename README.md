@@ -104,7 +104,6 @@ DATABASE_URL=postgres://...
 
 ## Local Setup
 
-```bash
 # Clone & Setup
 git clone <repo-url>
 cd pet-care-booker
@@ -122,4 +121,32 @@ python manage.py createsuperuser
 # Run
 python manage.py runserver
 
+## Testing
 
+- **Unit tests**: `python manage.py test`
+- **Integration tests**: Full user journey (signup → book → Stripe → manage bookings → delete)
+- **Manual testing**:
+  - Guest flow: Home → Services → Signup
+  - Auth flow: Login → Book → Pay → Bookings list → Profile → Logout
+  - CRUD: Create booking → Read list → Edit → Delete confirmation
+- **Responsive testing**: Chrome DevTools (iPhone 12/13 Pro, iPad)
+- **Cross-browser**: Chrome, Firefox, Edge, Safari (macOS)
+- **Deployment testing**: Heroku staging → production migration
+
+## Acknowledgements
+
+Heartfelt thanks to:
+
+- **My family** – for their unwavering support, patience, and understanding during late-night debugging sessions
+- **Raghav** – for granting the crucial time extension that allowed me to deliver a production-ready application
+- **Code Institute mentors** – for guidance throughout the full-stack journey
+- **CI Learner Community** – for collaborative problem-solving
+
+## Attributions
+
+- **Perplexity AI** – Expert debugging assistance with Heroku crashes, Django migrations, Stripe integration, Gunicorn deployment, and production configuration [web:70][web:89]
+- **Bootstrap 5** – Responsive CSS framework (https://getbootstrap.com)
+- **Stripe** – Secure payment processing (https://stripe.com/docs/payments/checkout)
+- **Heroku Dev Center** – Deployment, logging, and Postgres guides (https://devcenter.heroku.com)
+- **Django Documentation** – Framework reference and best practices (https://docs.djangoproject.com)
+- **Django Crispy Forms** – Beautiful form rendering (https://django-crispy-forms.readthedocs.io)
