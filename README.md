@@ -144,7 +144,7 @@ Heartfelt thanks to:
 
 ## Attributions
 
-- **Perplexity AI** – Expert debugging assistance with Heroku crashes, Django migrations, Stripe integration, Gunicorn deployment, and production configuration [web:70][web:89]
+- **Perplexity AI** – Expert debugging assistance with Heroku crashes, Django migrations, Stripe integration, Gunicorn deployment, and production configuration
 - **Bootstrap 5** – Responsive CSS framework (https://getbootstrap.com)
 - **Stripe** – Secure payment processing (https://stripe.com/docs/payments/checkout)
 - **Heroku Dev Center** – Deployment, logging, and Postgres guides (https://devcenter.heroku.com)
