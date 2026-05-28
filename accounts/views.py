@@ -4,6 +4,7 @@ import stripe
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.http import JsonResponse
@@ -17,7 +18,6 @@ from django.views.generic.edit import UpdateView, DeleteView
 from .forms import SignUpForm, BookingForm
 from .models import Booking
 
-
 stripe.api_key = getattr(settings, "STRIPE_SECRET_KEY", None)
 
 
@@ -25,6 +25,11 @@ class SignUpView(CreateView):
     form_class = SignUpForm
     template_name = "accounts/signup.html"
     success_url = "/login/"
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect("home")
+        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -179,8 +184,8 @@ def create_checkout_session(request):
             reverse("payment-success", args=[booking.id])
         )
         cancel_url = request.build_absolute_uri(
-            reverse("book")
-        ) + f"?booking_id={booking.id}"
+            reverse("payment-cancelled", args=[booking.id])
+        )
 
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
@@ -199,7 +204,16 @@ def create_checkout_session(request):
             mode="payment",
             success_url=success_url,
             cancel_url=cancel_url,
+            metadata={
+                "booking_id": str(booking.id),
+                "user_id": str(request.user.id),
+                "service": service,
+            },
         )
+
+        booking.payment_reference = session.id
+        booking.amount = price / 100
+        booking.save(update_fields=["payment_reference", "amount"])
 
         return JsonResponse({"url": session.url})
 
@@ -207,17 +221,26 @@ def create_checkout_session(request):
         return JsonResponse({"error": str(e)}, status=400)
 
 
+@login_required
 def payment_success(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
 
-    if not booking.paid:
-        booking.paid = True
-        booking.save()
-        messages.success(
-            request,
-            f"Payment complete for {booking.pet_name}."
-        )
+    if booking.paid:
+        messages.success(request, f"Payment complete for {booking.pet_name}.")
     else:
-        messages.info(request, f"{booking.pet_name} is already paid.")
+        messages.info(
+            request,
+            f"Payment submitted for {booking.pet_name}. Confirmation will be updated after Stripe verifies it."
+        )
 
     return redirect("bookings")
+
+
+@login_required
+def payment_cancelled(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    messages.warning(
+        request,
+        f"Payment was cancelled for {booking.pet_name}. Your booking has not been marked as paid."
+    )
+    return redirect(f"{reverse('book')}?booking_id={booking.id}")
