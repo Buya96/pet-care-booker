@@ -6,7 +6,6 @@ from django.dispatch import receiver
 
 
 class UserProfile(models.Model):
-    """Extra user info for pet bookings"""
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     phone = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True, max_length=200)
@@ -31,11 +30,11 @@ def save_user_profile(sender, instance, **kwargs):
 
 class Booking(models.Model):
     SERVICE_CHOICES = [
-        ('dog_walking', 'Dog Walking'),
-        ('grooming', 'Grooming'),
-        ('boarding', 'Boarding'),
+        ("dog_walking", "Dog Walking"),
+        ("grooming", "Grooming"),
+        ("boarding", "Boarding"),
     ]
-    
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     service = models.CharField(max_length=20, choices=SERVICE_CHOICES)
     pet_name = models.CharField(max_length=100)
@@ -43,12 +42,11 @@ class Booking(models.Model):
     time = models.TimeField()
     notes = models.TextField(blank=True)
     created = models.DateTimeField(auto_now_add=True)
-    
-    # ---------- NEW FIELDS FOR PAYMENTS ----------
-    paid = models.BooleanField(default=False)  # <-- TRACKS PAID STATUS
-    stripe_payment_intent = models.CharField(max_length=200, blank=True, null=True)  # Stripe payment ID
-    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # £25.00
-    
+
+    paid = models.BooleanField(default=False)
+    stripe_payment_intent = models.CharField(max_length=200, blank=True, null=True)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
     def __str__(self):
         status = "PAID" if self.paid else "Pending"
         return f"{self.pet_name} - {self.get_service_display()} on {self.date} [{status}]"

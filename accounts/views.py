@@ -7,7 +7,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
@@ -88,7 +88,6 @@ class BookingView(LoginRequiredMixin, FormView):
         return Booking.objects.filter(
             id=booking_id,
             user=self.request.user,
-            paid=False
         ).first()
 
     def get_context_data(self, **kwargs):
@@ -211,9 +210,9 @@ def create_checkout_session(request):
             },
         )
 
-        booking.payment_reference = session.id
-        booking.amount = price / 100
-        booking.save(update_fields=["payment_reference", "amount"])
+        booking.stripe_payment_intent = session.id
+        booking.amount_paid = price / 100
+        booking.save(update_fields=["stripe_payment_intent", "amount_paid"])
 
         return JsonResponse({"url": session.url})
 
@@ -230,7 +229,7 @@ def payment_success(request, booking_id):
     else:
         messages.info(
             request,
-            f"Payment submitted for {booking.pet_name}. Confirmation will be updated after Stripe verifies it."
+            f"Payment submitted for {booking.pet_name}. Your booking will update after Stripe confirms it."
         )
 
     return redirect("bookings")
@@ -244,3 +243,47 @@ def payment_cancelled(request, booking_id):
         f"Payment was cancelled for {booking.pet_name}. Your booking has not been marked as paid."
     )
     return redirect(f"{reverse('book')}?booking_id={booking.id}")
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+    endpoint_secret = getattr(settings, "STRIPE_WEBHOOK_SECRET", None)
+
+    if not endpoint_secret:
+        return HttpResponse("Webhook secret not configured.", status=500)
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload=payload,
+            sig_header=sig_header,
+            secret=endpoint_secret,
+        )
+    except ValueError:
+        return HttpResponse("Invalid payload.", status=400)
+    except stripe.error.SignatureVerificationError:
+        return HttpResponse("Invalid signature.", status=400)
+
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        booking_id = session.get("metadata", {}).get("booking_id")
+
+        if booking_id:
+            try:
+                booking = Booking.objects.get(id=booking_id)
+
+                if not booking.paid:
+                    booking.paid = True
+                    booking.stripe_payment_intent = session.get("id")
+
+                    amount_total = session.get("amount_total")
+                    if amount_total is not None:
+                        booking.amount_paid = amount_total / 100
+
+                    booking.save()
+            except Booking.DoesNotExist:
+                pass
+
+    return HttpResponse(status=200)
