@@ -7,10 +7,6 @@ urlpatterns = [
     path("logout/", views.CustomLogoutView.as_view(), name="logout"),
     path("profile/", views.ProfileView.as_view(), name="profile"),
 
-    path("book/", views.BookingView.as_view(), name="book"),
-    path("bookings/", views.UserBookingsView.as_view(), name="bookings"),
-    path("booking/<int:pk>/update/", views.BookingUpdateView.as_view(), name="booking-update"),
-    path("booking/<int:pk>/delete/", views.BookingDeleteView.as_view(), name="booking-delete"),
 
     path("", views.home, name="home"),
     path("services/", views.services, name="services"),

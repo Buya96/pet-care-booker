@@ -1,0 +1,26 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Delete Booking{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card border-danger shadow">
+      <div class="card-header bg-danger text-white text-center">
+        <h3>Confirm Delete</h3>
+      </div>
+      <div class="card-body text-center">
+        <p class="mb-4">
+          Are you sure you want to delete the booking for <strong>{{ object.pet_name }}</strong>?<br>
+          <small class="text-muted">{{ object.get_service_display }} - {{ object.date }} {{ object.time }}</small>
+        </p>
+        <form method="post" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger me-2">Yes, Delete</button>
+        </form>
+        <a href="{% url 'bookings' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
