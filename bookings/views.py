@@ -1,11 +1,10 @@
-from django.shortcuts import redirect
-from django.shortcuts import render
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import FormView, ListView
 from django.views.generic.edit import UpdateView, DeleteView
-from django.conf import settings
 
 from accounts.models import Booking
 from .forms import BookingForm
@@ -75,6 +74,8 @@ class BookingUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         messages.success(self.request, "Booking updated successfully.")
+        if not self.object.paid:
+            return f"{reverse('book')}?booking_id={self.object.id}"
         return reverse_lazy("bookings")
 
 
