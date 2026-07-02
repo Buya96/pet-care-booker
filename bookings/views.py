@@ -16,11 +16,6 @@ class BookingView(LoginRequiredMixin, FormView):
     login_url = "login"
     redirect_field_name = "next"
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user
-        return kwargs
-
     def get_booking_from_query(self):
         booking_id = self.request.GET.get("booking_id")
         if not booking_id:
@@ -30,6 +25,16 @@ class BookingView(LoginRequiredMixin, FormView):
             user=self.request.user,
         ).first()
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+
+        booking = self.get_booking_from_query()
+        if booking:
+            kwargs["instance"] = booking
+
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["STRIPE_PUBLIC_KEY"] = getattr(settings, "STRIPE_PUBLISHABLE_KEY", "")
@@ -37,10 +42,18 @@ class BookingView(LoginRequiredMixin, FormView):
         return context
 
     def form_valid(self, form):
+        existing_booking = self.get_booking_from_query()
+        is_update = existing_booking is not None
+
         booking = form.save(commit=False)
         booking.user = self.request.user
         booking.save()
-        messages.success(self.request, f"Booking created for {booking.pet_name}!")
+
+        if is_update:
+            messages.success(self.request, f"Booking updated for {booking.pet_name}!")
+        else:
+            messages.success(self.request, f"Booking created for {booking.pet_name}!")
+
         book_url = reverse("book")
         return redirect(f"{book_url}?booking_id={booking.id}")
 
