@@ -3,18 +3,17 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environments / Python version
+# Virtual environments / local config
 venv/
-.python-version
-
-# Environment variables
 .env
+.python-version
 
 # Django
 db.sqlite3
 *.sqlite3
 media/
 staticfiles/
+static/admin/
 
 # IDEs
 .vscode/
