@@ -70,6 +70,7 @@ Recent production testing showed the Heroku webhook endpoint responding with HTT
 
 ### Dashboard & Management
 [![09 Bookings Paid](screenshots/09-booking-page-paid.png)](https://pet-care-booker-62152b813817.herokuapp.com/bookings/)
+[![09 Bookings Cancellation](screenshots/09(2)-booking-page-cancellation.png)](https://pet-care-booker-62152b813817.herokuapp.com/bookings/)
 [![10 Profile Page](screenshots/10-profile-page.png)](https://pet-care-booker-62152b813817.herokuapp.com/profile/)
 [![11 Edit Booking](screenshots/11-booking-form-edit.png)](https://pet-care-booker-62152b813817.herokuapp.com/bookings/)
 [![12 Delete Booking](screenshots/12-booking-form-delete.png)](https://pet-care-booker-62152b813817.herokuapp.com/bookings/)
