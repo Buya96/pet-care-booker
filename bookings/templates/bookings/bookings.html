@@ -17,15 +17,10 @@
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
-                  <h5 class="card-title mb-1">
-                    {{ booking.get_service_display }}
-                  </h5>
-                  <h6 class="card-subtitle text-muted">
-                    {{ booking.pet_name }}
-                  </h6>
+                  <h5 class="card-title mb-1">{{ booking.get_service_display }}</h5>
+                  <h6 class="card-subtitle text-muted">{{ booking.pet_name }}</h6>
                 </div>
 
-                {# PAID BADGE #}
                 {% if booking.paid %}
                   <span class="badge bg-success">Paid</span>
                 {% else %}
@@ -34,14 +29,18 @@
               </div>
 
               <p class="card-text mb-1">
-                {{ booking.date|date:"F j, Y" }}
-                at
-                {{ booking.time|time:"g:i a" }}
+                {{ booking.date|date:"F j, Y" }} at {{ booking.time|time:"g:i a" }}
               </p>
 
               {% if booking.notes %}
                 <p class="card-text">
                   <strong>Notes:</strong> {{ booking.notes }}
+                </p>
+              {% endif %}
+
+              {% if booking.amount_paid %}
+                <p class="card-text mb-1">
+                  <small class="text-muted">Amount: £{{ booking.amount_paid }}</small>
                 </p>
               {% endif %}
 
@@ -51,13 +50,18 @@
                 </small>
               </p>
 
-              <div class="mt-2">
-                <a href="{% url 'booking-update' booking.id %}" class="btn btn-sm btn-primary">
+              <div class="mt-3 d-flex flex-wrap gap-2">
+                {% if not booking.paid %}
+                  <a href="{% url 'book' %}?booking_id={{ booking.id }}" class="btn btn-sm btn-success">
+                    Pay now
+                  </a>
+                {% endif %}
 
+                <a href="{% url 'booking-update' booking.id %}" class="btn btn-sm btn-primary">
                   Edit
                 </a>
-                <a href="{% url 'booking-delete' booking.id %}" class="btn btn-sm btn-danger">
 
+                <a href="{% url 'booking-delete' booking.id %}" class="btn btn-sm btn-danger">
                   Delete
                 </a>
               </div>
@@ -67,7 +71,6 @@
       {% endfor %}
     </div>
 
-    {# PAGINATION #}
     {% if is_paginated %}
       <nav aria-label="Bookings navigation">
         <ul class="pagination justify-content-center mt-4">

@@ -27,23 +27,38 @@
 
           {% if booking %}
             <input type="hidden" id="booking-id" value="{{ booking.id }}">
-            <div class="alert alert-success" id="booking-success-alert">
-              Booking ready! <strong>{{ booking.pet_name }}</strong> for {{ booking.get_service_display }} on {{ booking.date }}.
-            </div>
+
+            {% if booking.paid %}
+              <div class="alert alert-success" id="booking-status-alert">
+                Booking confirmed for <strong>{{ booking.pet_name }}</strong>.
+                This booking has already been paid for.
+              </div>
+            {% else %}
+              <div class="alert alert-info" id="booking-status-alert">
+                Booking ready! <strong>{{ booking.pet_name }}</strong> for {{ booking.get_service_display }} on {{ booking.date }}.
+                You can now complete payment with Stripe.
+              </div>
+            {% endif %}
           {% endif %}
 
           <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-3">
             <button type="submit" class="btn btn-success flex-fill me-md-2" id="book-btn">
-              {% if booking %}Update Booking{% else %}Create Booking{% endif %}
+              {% if booking %}Save Booking{% else %}Create Booking{% endif %}
             </button>
 
             <button
               type="button"
               id="pay-button"
               class="btn btn-primary flex-fill"
-              {% if not booking %}disabled{% endif %}
+              {% if not booking or booking.paid %}disabled{% endif %}
             >
-              {% if booking %}Pay with Stripe{% else %}Create booking first{% endif %}
+              {% if booking and not booking.paid %}
+                Pay with Stripe
+              {% elif booking and booking.paid %}
+                Already paid
+              {% else %}
+                Create booking first
+              {% endif %}
             </button>
           </div>
         </form>
@@ -60,15 +75,24 @@
 
 <script src="https://js.stripe.com/v3/"></script>
 <script>
-  const stripe = Stripe('{{ STRIPE_PUBLIC_KEY }}');
+  const stripePublicKey = '{{ STRIPE_PUBLIC_KEY }}';
+  const stripe = stripePublicKey ? Stripe(stripePublicKey) : null;
+
   const payBtn = document.getElementById('pay-button');
   const bookingIdInput = document.getElementById('booking-id');
   const serviceSelect = document.querySelector('select[name="service"]');
   const prices = { dog_walking: '30', grooming: '25', boarding: '35' };
+  const bookingPaid = "{% if booking and booking.paid %}true{% else %}false{% endif %}" === "true";
 
   function updatePayButton() {
     const service = serviceSelect ? serviceSelect.value : 'boarding';
     const bookingId = bookingIdInput ? bookingIdInput.value : null;
+
+    if (bookingPaid) {
+      payBtn.disabled = true;
+      payBtn.textContent = 'Already paid';
+      return;
+    }
 
     if (bookingId) {
       payBtn.disabled = false;
@@ -86,11 +110,13 @@
   updatePayButton();
 
   setTimeout(function () {
-    const alerts = document.querySelectorAll('.alert-success');
+    const alerts = document.querySelectorAll('.alert-success, .alert-info');
     alerts.forEach(function (alert) {
-      alert.style.transition = 'opacity 0.5s';
-      alert.style.opacity = '0';
-      setTimeout(() => alert.remove(), 500);
+      if (alert.id === 'booking-status-alert') {
+        alert.style.transition = 'opacity 0.5s';
+        alert.style.opacity = '0';
+        setTimeout(() => alert.remove(), 500);
+      }
     });
   }, 5000);
 
@@ -102,6 +128,11 @@
 
     if (!bookingId) {
       alert('No booking selected. Create a booking first.');
+      return;
+    }
+
+    if (!stripe) {
+      alert('Stripe is not configured correctly.');
       return;
     }
 
